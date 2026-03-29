@@ -2,6 +2,7 @@ package domain
 
 import (
 	"sentineldb/internal/job/models"
+	"sentineldb/pkg/logger"
 
 	"gorm.io/gorm"
 )
@@ -13,6 +14,7 @@ type RunRepositoryInterface interface {
 
 type RunRepository struct {
 	DB *gorm.DB
+	Logger *logger.Logger
 }
 
 func (r RunRepository) GetRunByID(id string) (*models.Run, error) {

@@ -99,7 +99,7 @@ func TestCreateAsset(t *testing.T) {
             c   := e.NewContext(req, rec)
 
             repo    := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo, getLogger())
+            handler := NewAssetHandler(repo, getLogger())
 
             handler.CreateAsset(c)
 
@@ -126,7 +126,7 @@ func TestGetAssets(t *testing.T) {
             rec := httptest.NewRecorder()
             c := e.NewContext(req, rec)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo, getLogger())
+            handler := NewAssetHandler(repo, getLogger())
             handler.GetAssets(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -155,7 +155,7 @@ func TestGetAssetByID(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo, getLogger())
+            handler := NewAssetHandler(repo, getLogger())
             handler.GetAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -187,7 +187,7 @@ func TestUpdateAsset(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo, getLogger())
+            handler := NewAssetHandler(repo, getLogger())
             handler.UpdateAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -216,7 +216,7 @@ func TestDeleteAsset(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo, getLogger())
+            handler := NewAssetHandler(repo, getLogger())
             handler.DeleteAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)

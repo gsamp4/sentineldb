@@ -8,16 +8,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Handler struct {
+type AssetHandler struct {
     Repo   domain.AssetRepositoryInterface
     Logger *logger.Logger
 }
 
-func NewHandler(repo domain.AssetRepositoryInterface, log *logger.Logger) *Handler {
-    return &Handler{Repo: repo, Logger: log}
+func NewAssetHandler(repo domain.AssetRepositoryInterface, log *logger.Logger) *AssetHandler {
+    return &AssetHandler{Repo: repo, Logger: log}
 }
 
-func (h *Handler) CreateAsset(c echo.Context) error {
+func (h *AssetHandler) CreateAsset(c echo.Context) error {
     var body CreateAssetRequest
 
     if err := c.Bind(&body); err != nil {
@@ -42,7 +42,7 @@ func (h *Handler) CreateAsset(c echo.Context) error {
     return c.JSON(201, map[string]string{"message": "Asset created successfully"})
 }
 
-func (h *Handler) GetAssets(c echo.Context) error {
+func (h *AssetHandler) GetAssets(c echo.Context) error {
     assets, err := h.Repo.ListAssets()
     if err != nil {
         h.Logger.Error("Failed to list assets", err)
@@ -51,7 +51,7 @@ func (h *Handler) GetAssets(c echo.Context) error {
     return c.JSON(200, assets)
 }
 
-func (h *Handler) GetAsset(c echo.Context) error {
+func (h *AssetHandler) GetAsset(c echo.Context) error {
     id := c.Param("id")
     asset, err := h.Repo.GetAssetByID(id)
     if err != nil {
@@ -63,7 +63,7 @@ func (h *Handler) GetAsset(c echo.Context) error {
     return c.JSON(200, asset)
 }
 
-func (h *Handler) UpdateAsset(c echo.Context) error {
+func (h *AssetHandler) UpdateAsset(c echo.Context) error {
     id := c.Param("id")
     var body struct {
         Label  *string `json:"label"`
@@ -83,7 +83,7 @@ func (h *Handler) UpdateAsset(c echo.Context) error {
     return c.JSON(200, map[string]string{"message": "Asset updated successfully"})
 }
 
-func (h *Handler) DeleteAsset(c echo.Context) error {
+func (h *AssetHandler) DeleteAsset(c echo.Context) error {
     id := c.Param("id")
     err := h.Repo.SoftDeleteAsset(id)
     if err != nil {
