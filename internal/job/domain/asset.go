@@ -5,6 +5,7 @@ import (
 	"net"
 	"regexp"
 	"sentineldb/internal/job/models"
+	"sentineldb/pkg/logger"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/oklog/ulid/v2"
@@ -24,6 +25,7 @@ type AssetRepositoryInterface interface {
 
 type AssetRepository struct {
 	DB *gorm.DB
+	Logger *logger.Logger
 }
 
 func (a AssetRepository) RegisterAsset(asset *models.Asset) error {

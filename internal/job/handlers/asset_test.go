@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sentineldb/internal/job/models"
+	"sentineldb/pkg/logger"
 	"strings"
 	"testing"
 
@@ -63,6 +64,13 @@ func (m MockAssetRepository) SoftDeleteAsset(id string) error {
     return nil
 }
 
+func getLogger() *logger.Logger {
+    return logger.New(logger.Options{
+        Level:  logger.LevelInfo,
+        Prefix: "TEST: ",
+    })
+}
+
 func strPtr(s string) *string { return &s }
 
 func TestCreateAsset(t *testing.T) {
@@ -91,7 +99,7 @@ func TestCreateAsset(t *testing.T) {
             c   := e.NewContext(req, rec)
 
             repo    := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo)
+            handler := NewHandler(repo, getLogger())
 
             handler.CreateAsset(c)
 
@@ -118,7 +126,7 @@ func TestGetAssets(t *testing.T) {
             rec := httptest.NewRecorder()
             c := e.NewContext(req, rec)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo)
+            handler := NewHandler(repo, getLogger())
             handler.GetAssets(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -147,7 +155,7 @@ func TestGetAssetByID(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo)
+            handler := NewHandler(repo, getLogger())
             handler.GetAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -179,7 +187,7 @@ func TestUpdateAsset(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo)
+            handler := NewHandler(repo, getLogger())
             handler.UpdateAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
@@ -208,7 +216,7 @@ func TestDeleteAsset(t *testing.T) {
             c.SetParamNames("id")
             c.SetParamValues(tt.id)
             repo := MockAssetRepository{ShouldFail: tt.mockFail}
-            handler := NewHandler(repo)
+            handler := NewHandler(repo, getLogger())
             handler.DeleteAsset(c)
             if rec.Code != tt.wantStatus {
                 t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)

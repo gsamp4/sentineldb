@@ -75,16 +75,16 @@ func main() {
 
 	cfg, err := loadConfig()
 	if err != nil {
-        log.Fatal("config error: ", err)
-    }
+		log.Fatal("config error: ", err)
+	}
 
 	db, err := storage.NewConnection(cfg.DatabaseURL)
 	if err != nil {
-        log.Fatal("database error: ", err)
-    }
+		log.Fatal("database error: ", err)
+	}
 
 	e := middlewares.ApplySecurityMiddlewares(echo.New())
-	routes.InitRoutes(e, db)
+	routes.InitRoutes(e, db, log)
 	go startServer(cfg, e)
 
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
@@ -98,7 +98,7 @@ func main() {
 	defer cancel()
 
 	if err := e.Shutdown(ctx); err != nil {
-        log.Fatal("Server shutdown error: ", err)
-    }
+		log.Fatal("Server shutdown error: ", err)
+	}
 	log.Info("Server stopped")
 }

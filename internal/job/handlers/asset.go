@@ -3,17 +3,18 @@ package handlers
 import (
 	"sentineldb/internal/job/domain"
 	"sentineldb/internal/job/models"
+	"sentineldb/pkg/logger"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 )
 
 type Handler struct {
-    Repo domain.AssetRepositoryInterface
+    Repo   domain.AssetRepositoryInterface
+    Logger *logger.Logger
 }
 
-func NewHandler(repo domain.AssetRepositoryInterface) *Handler {
-	return &Handler{Repo: repo}
+func NewHandler(repo domain.AssetRepositoryInterface, log *logger.Logger) *Handler {
+    return &Handler{Repo: repo, Logger: log}
 }
 
 func (h *Handler) CreateAsset(c echo.Context) error {
@@ -34,7 +35,7 @@ func (h *Handler) CreateAsset(c echo.Context) error {
     }
 
     if err := h.Repo.RegisterAsset(&asset); err != nil {
-        log.Error("Failed to create asset: ", err)
+        h.Logger.Error("Failed to create asset", err)
         return c.JSON(500, map[string]string{"error": "failed to create asset"})
     }
 
@@ -44,8 +45,7 @@ func (h *Handler) CreateAsset(c echo.Context) error {
 func (h *Handler) GetAssets(c echo.Context) error {
     assets, err := h.Repo.ListAssets()
     if err != nil {
-        log.Error("Failed to list assets: ", err)
-
+        h.Logger.Error("Failed to list assets", err)
         return c.JSON(500, map[string]string{"error": "failed to list assets"})
     }
     return c.JSON(200, assets)
@@ -77,7 +77,7 @@ func (h *Handler) UpdateAsset(c echo.Context) error {
         if err.Error() == "not found" {
             return c.JSON(404, map[string]string{"error": "asset not found"})
         }
-        log.Error("Failed to update asset: ", err)
+        h.Logger.Error("Failed to update asset", err)
         return c.JSON(500, map[string]string{"error": "failed to update asset"})
     }
     return c.JSON(200, map[string]string{"message": "Asset updated successfully"})
@@ -90,7 +90,7 @@ func (h *Handler) DeleteAsset(c echo.Context) error {
         if err.Error() == "not found" {
             return c.JSON(404, map[string]string{"error": "asset not found"})
         }
-        log.Error("Failed to delete asset: ", err)
+        h.Logger.Error("Failed to delete asset", err)
         return c.JSON(500, map[string]string{"error": "failed to delete asset"})
     }
     return c.JSON(200, map[string]string{"message": "Asset deleted (soft) successfully"})
