@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"sentineldb/internal/job/routes"
 	"sentineldb/internal/middlewares"
 	"sentineldb/internal/storage"
 	"sentineldb/pkg/logger"
@@ -77,12 +78,13 @@ func main() {
         log.Fatal("config error: ", err)
     }
 
-	_, err = storage.NewConnection(cfg.DatabaseURL)
+	db, err := storage.NewConnection(cfg.DatabaseURL)
 	if err != nil {
         log.Fatal("database error: ", err)
     }
 
 	e := middlewares.ApplySecurityMiddlewares(echo.New())
+	routes.InitRoutes(e, db)
 	go startServer(cfg, e)
 
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.

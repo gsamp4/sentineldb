@@ -28,7 +28,6 @@ func NewConnection(databaseURL string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
-	defer sqlDB.Close()
 
 	sqlDB.SetMaxOpenConns(int(defaultMaxConns))
 	sqlDB.SetMaxIdleConns(int(defaultMinConns))
