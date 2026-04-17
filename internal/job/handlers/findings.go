@@ -45,7 +45,7 @@ func (h *FindingHandler) GetFindingByID(c echo.Context) error {
 	return c.JSON(200, finding)
 }
 
-func (h *FindingHandler) UpdateFindingStatus(c echo.Context) error {
+func (h *FindingHandler) UpdateFinding(c echo.Context) error {
 	var req FindingRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(400, map[string]string{"error": "Invalid request body"})

@@ -21,6 +21,10 @@ func InitRoutes(e *echo.Echo, db *gorm.DB, log *logger.Logger) {
     triggerRepo   := assetDomain.TriggerRepository{DB: db, Logger: log}
     triggerHandler := jobHandlers.NewTriggerHandler(triggerRepo, log)
 
+    // findings
+    findingsRepo    := assetDomain.FindingRepository{DB: db, Logger: log}
+    findingsHandler := jobHandlers.NewFindingHandler(findingsRepo, log)
+
     v1 := e.Group("/api/v1")
 
     v1.POST("/assets",       assetHandler.CreateAsset)
@@ -31,6 +35,12 @@ func InitRoutes(e *echo.Echo, db *gorm.DB, log *logger.Logger) {
 
     v1.GET("/runs",      runsHandler.GetRuns)
     v1.GET("/runs/:id",  runsHandler.GetRunByID)
+    v1.GET("/runs/:id/jobs",  runsHandler.GetRunJobs)
 
     v1.POST("/trigger", triggerHandler.TriggerJob)
+    v1.POST("/trigger/:id", triggerHandler.GetTrigger)
+
+    v1.GET("/findings", findingsHandler.GetFindings)
+    v1.GET("/findings/:id", findingsHandler.GetFindingByID)
+    v1.PUT("/findings/:id/resolve", findingsHandler.UpdateFinding)
 }
