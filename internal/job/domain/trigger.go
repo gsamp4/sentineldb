@@ -11,6 +11,7 @@ import (
 
 type TriggerRepositoryInterface interface {
 	RunTrigger() bool
+    GetTrigger(id string) (*models.Run, error)
 }
 
 type TriggerRepository struct {
@@ -63,4 +64,12 @@ func (r TriggerRepository) RunTrigger() bool {
     }
 
     return true
+}
+
+func (r TriggerRepository) GetTrigger(id string) (*models.Run, error) {
+    var run models.Run
+    if err := r.DB.Where("id = ?", id).First(&run).Error; err != nil {
+        return nil, err
+    }
+    return &run, nil
 }
