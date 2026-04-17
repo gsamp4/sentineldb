@@ -95,3 +95,17 @@ func TestGetRunByID(t *testing.T) {
         })
     }
 }
+
+func (m MockRunRepository) GetRunJobs(id string) ([]models.Outbox, error) {
+    if m.ShouldFail {
+        return nil, fmt.Errorf("database error")
+    }
+    // Return dummy jobs for testing
+    if id == "1" {
+        return []models.Outbox{
+            {ID: "job1", RunID: "1", Status: "pending"},
+            {ID: "job2", RunID: "1", Status: "done"},
+        }, nil
+    }
+    return []models.Outbox{}, nil
+}
