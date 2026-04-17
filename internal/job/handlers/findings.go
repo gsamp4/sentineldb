@@ -44,3 +44,14 @@ func (h *FindingHandler) GetFindingByID(c echo.Context) error {
 	}
 	return c.JSON(200, finding)
 }
+
+func (h *FindingHandler) UpdateFindingStatus(c echo.Context) error {
+	var req FindingRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(400, map[string]string{"error": "Invalid request body"})
+	}
+	if err := domain.UpdateFindingStatus(h.Repo.(*domain.FindingRepository).DB, req.ID, "closed"); err != nil {
+		return c.JSON(500, map[string]string{"error": "Failed to update finding status"})
+	}
+	return c.JSON(200, map[string]string{"message": "Finding status updated successfully"})
+}

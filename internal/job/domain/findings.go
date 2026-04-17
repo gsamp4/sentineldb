@@ -37,3 +37,7 @@ func (f FindingRepository) GetFindingByID(id string) (*models.Finding, error) {
 	}
 	return &finding, nil
 }
+
+func UpdateFindingStatus(db *gorm.DB, findingID string, status string) error {
+	return db.Model(&models.Finding{}).Where("id = ?", findingID).Update("status", status).Error
+}
