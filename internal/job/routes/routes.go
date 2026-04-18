@@ -42,5 +42,5 @@ func InitRoutes(e *echo.Echo, db *gorm.DB, log *logger.Logger) {
 
     v1.GET("/findings", findingsHandler.GetFindings)
     v1.GET("/findings/:id", findingsHandler.GetFindingByID)
-    v1.PUT("/findings/:id/resolve", findingsHandler.UpdateFinding)
+    v1.PATCH("/findings/:id/resolve", findingsHandler.UpdateFinding)
 }

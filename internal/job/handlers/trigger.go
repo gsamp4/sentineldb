@@ -26,7 +26,7 @@ func (h *TriggerHandler) TriggerJob(c echo.Context) error {
 		return c.JSON(500, map[string]string{"error": "Failed to trigger job"})
 	}
 
-	return c.JSON(200, map[string]string{"message": "Job triggered successfully"})
+	return c.JSON(202, map[string]string{"message": "Job triggered successfully"})
 }
 
 func (h *TriggerHandler) GetTrigger(c echo.Context) error {

@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"sentineldb/internal/job/domain"
 	"sentineldb/internal/job/models"
+	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -100,7 +101,6 @@ func (m MockRunRepository) GetRunJobs(id string) ([]models.Outbox, error) {
     if m.ShouldFail {
         return nil, fmt.Errorf("database error")
     }
-    // Return dummy jobs for testing
     if id == "1" {
         return []models.Outbox{
             {ID: "job1", RunID: "1", Status: "pending"},
@@ -108,4 +108,35 @@ func (m MockRunRepository) GetRunJobs(id string) ([]models.Outbox, error) {
         }, nil
     }
     return []models.Outbox{}, nil
+}
+
+func TestGetRunJobs(t *testing.T) {
+    tests := []struct {
+        name       string
+        body       string
+        mockFail   bool
+        wantStatus int
+    }{
+        {"found", `{"id":"1"}`, false, 200},
+        {"empty result", `{"id":"999"}`, false, 200},
+        {"database error", `{"id":"1"}`, true, 404},
+        {"invalid body", `not json`, false, 400},
+    }
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            e := echo.New()
+            req := httptest.NewRequest(http.MethodGet, "/api/v1/runs/1/jobs", strings.NewReader(tt.body))
+            req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+            rec := httptest.NewRecorder()
+            c := e.NewContext(req, rec)
+
+            repo := MockRunRepository{ShouldFail: tt.mockFail}
+            handler := NewTestRunHandler(repo)
+            handler.GetRunJobs(c)
+
+            if rec.Code != tt.wantStatus {
+                t.Errorf("expected status %d, got %d", tt.wantStatus, rec.Code)
+            }
+        })
+    }
 }

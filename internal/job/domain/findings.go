@@ -10,6 +10,7 @@ import (
 type FindingRepositoryInterface interface {
 	GetFindingByID(id string) (*models.Finding, error)
 	ListFindings() ([]models.Finding, error)
+	UpdateFindingStatus(findingID string, status string) error
 }
 
 type FindingRepository struct {
@@ -38,6 +39,6 @@ func (f FindingRepository) GetFindingByID(id string) (*models.Finding, error) {
 	return &finding, nil
 }
 
-func UpdateFindingStatus(db *gorm.DB, findingID string, status string) error {
-	return db.Model(&models.Finding{}).Where("id = ?", findingID).Update("status", status).Error
+func (f FindingRepository) UpdateFindingStatus(findingID string, status string) error {
+	return f.DB.Model(&models.Finding{}).Where("id = ?", findingID).Update("status", status).Error
 }
