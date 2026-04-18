@@ -60,6 +60,61 @@ func processShodan(ctx context.Context, db *gorm.DB, log *logger.Logger, job *mo
     return nil
 }
 
+// diffSnapshots compares a new Shodan response against the previous raw snapshot.
+// It returns findings only for ports that are new (not present in the previous snapshot).
+func diffSnapshots(previousData json.RawMessage, current ShodanResponse, assetID, runID string) []models.Finding {
+    previousPorts := make(map[string]bool)
+
+    if len(previousData) > 0 {
+        var prev ShodanResponse
+        if err := json.Unmarshal(previousData, &prev); err == nil {
+            for _, m := range prev.Matches {
+                key := fmt.Sprintf("%s:%d", m.IP, m.Port)
+                previousPorts[key] = true
+            }
+        }
+    }
+
+    var findings []models.Finding
+    for _, m := range current.Matches {
+        key := fmt.Sprintf("%s:%d", m.IP, m.Port)
+        if previousPorts[key] {
+            continue
+        }
+
+        severity := "info"
+        switch {
+        case m.Port == 22 || m.Port == 3389:
+            severity = "high"
+        case m.Port == 23 || m.Port == 445 || m.Port == 5432 || m.Port == 3306:
+            severity = "critical"
+        case m.Port == 80 || m.Port == 443:
+            severity = "low"
+        default:
+            severity = "medium"
+        }
+
+        detail, _ := json.Marshal(map[string]interface{}{
+            "ip":        m.IP,
+            "port":      m.Port,
+            "org":       m.Org,
+            "hostnames": m.Hostnames,
+        })
+
+        findings = append(findings, models.Finding{
+            ID:       ulid.Make().String(),
+            AssetID:  assetID,
+            RunID:    runID,
+            Source:   "shodan",
+            Severity: severity,
+            Title:    fmt.Sprintf("New open port %d on %s", m.Port, m.IP),
+            Detail:   json.RawMessage(detail),
+        })
+    }
+
+    return findings
+}
+
 func CallShodan(assetValue string) (ShodanResponse, error) {
     apiKey := os.Getenv("SHODAN_API_KEY")
     if apiKey == "" {
