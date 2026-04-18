@@ -24,7 +24,7 @@ type ShodanResponse struct {
 	} `json:"matches"`
 }
 
-func processShodan(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.Outbox) error {
+func ProcessShodan(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.Outbox) error {
     var asset models.Asset
     db.First(&asset, "id = ?", job.AssetID)
 

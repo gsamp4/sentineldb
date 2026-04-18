@@ -16,7 +16,7 @@ func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.O
 
     switch job.JobType {
     case "scan_shodan":
-        err = processShodan(ctx, db, log, job)
+        err = services.ProcessShodan(ctx, db, log, job)
     // case "scan_hibp":
     //     err = processHIBP(ctx, db, log, job)
     // case "correlate":
@@ -27,11 +27,10 @@ func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.O
     }
 
     if err != nil {
-        handleFailure(db, job, err)
+       //handleFailure(db, job, err)
         return
     }
 
-    // sucesso — marca job como completed
     db.Model(job).Updates(map[string]interface{}{
         "status":      "completed",
         "finished_at": time.Now(),
