@@ -58,8 +58,8 @@ sentineldb/
 Each `cmd/` directory produces an independent binary. They share internal packages but are deployed and run separately.
 
 ```
-cmd/api     → serves HTTP requests, writes to outbox
-cmd/worker  → consumes outbox, calls external APIs, persists findings
+cmd/api     → serves HTTP requests, writes to outboxes
+cmd/worker  → consumes outboxes, calls external APIs, persists findings
 ```
 
 This separation means the API never blocks waiting for external calls (Shodan, HIBP). It enqueues work and returns immediately. The worker processes jobs asynchronously in the background.
@@ -161,7 +161,7 @@ With outbox (same transaction):
 ```
 BEGIN
 INSERT run
-INSERT outbox jobs
+INSERT outboxes jobs
 COMMIT ✓ — both persist or neither does
 → impossible to have a run without jobs
 ```
@@ -188,7 +188,7 @@ An external broker (RabbitMQ, Kafka) is better when:
 The worker uses `SELECT FOR UPDATE SKIP LOCKED` to safely dequeue jobs across multiple concurrent goroutines without conflicts or duplicate processing.
 
 ```sql
-SELECT * FROM outbox
+SELECT * FROM outboxes
 WHERE status = 'pending'
 AND scheduled_at <= NOW()
 ORDER BY scheduled_at ASC
@@ -252,24 +252,24 @@ Each external source (Shodan, HIBP) has an independent circuit breaker. If a sou
 | ----------------- | ------------------------------------------------ |
 | `assets`          | Digital assets registered for monitoring         |
 | `runs`            | One record per trigger execution                 |
-| `outbox`          | Job queue — one job per asset per source per run |
+| `outboxes`        | Job queue — one job per asset per source per run |
 | `asset_snapshots` | Raw API responses stored after each scan         |
 | `findings`        | Actionable results — only what changed or is new |
 
 ### Key relationships
 
 ```
-assets (1) ←→ (N) outbox (N) ←→ (1) runs
+assets (1) ←→ (N) outboxes (N) ←→ (1) runs
 assets (1) ←→ (N) asset_snapshots
 assets (1) ←→ (N) findings
-runs   (1) ←→ (N) outbox
+runs   (1) ←→ (N) outboxes
 runs   (1) ←→ (N) asset_snapshots
 runs   (1) ←→ (N) findings
 ```
 
 ### Why outbox and asset_snapshots are separate tables
 
-`outbox` exists **before** processing — it tells the worker what to do. `asset_snapshots` exists **after** processing — it stores what was found. They represent opposite moments in the job lifecycle and cannot be merged.
+`outboxes` exists **before** processing — it tells the worker what to do. `asset_snapshots` exists **after** processing — it stores what was found. They represent opposite moments in the job lifecycle and cannot be merged.
 
 ### Why findings and snapshots are separate
 
@@ -412,7 +412,7 @@ Each request generates a trace propagated through the worker via job payload. Th
 
 ```
 POST /trigger (12ms)
-└── insert outbox (3ms)
+└── insert outboxes (3ms)
     └── worker dequeue (2ms)
         └── scan_shodan (230ms)
         └── scan_hibp (180ms)

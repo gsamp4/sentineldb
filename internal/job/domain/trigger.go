@@ -40,7 +40,7 @@ func (r TriggerRepository) RunTrigger() bool {
             return err  // rollback
         }
 
-        // cria um job no outbox para cada asset
+        // cria um job em outboxes para cada asset
         for _, asset := range assets {
             job := models.Outbox{
                 ID:          ulid.Make().String(),
@@ -59,7 +59,7 @@ func (r TriggerRepository) RunTrigger() bool {
     })
 
     if err != nil {
-        r.Logger.Error("Error creating run and outbox jobs", err)
+        r.Logger.Error("Error creating run and outboxes jobs", err)
         return false
     }
 

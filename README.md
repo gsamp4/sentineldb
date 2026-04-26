@@ -11,20 +11,24 @@ Security monitoring tools are either too expensive, too complex to self-host, or
 SentinelDB monitors digital assets (IPs, domains, and emails) across multiple threat intelligence sources and sends alerts when something changes or a new exposure is found.
 
 **Shodan integration**
+
 - Detects open ports and exposed services
 - Identifies software versions with known CVEs
 - Tracks SSL certificate expiration
 - Alerts when new ports open or services change since the last scan
 
 **HaveIBeenPwned integration**
+
 - Monitors emails and domains against known data breaches
 - Alerts when a new breach is detected containing monitored assets
 
 **Cross-source correlation**
+
 - Combines findings from multiple sources within the same run
 - Elevates severity when an asset is exposed on multiple fronts simultaneously (e.g., open database port + email found in breach)
 
 **Telegram notifications**
+
 - Real-time alerts with severity classification (critical, high, medium, low)
 - Daily digest summarizing all active findings
 - Notifications when findings are resolved
@@ -36,7 +40,7 @@ SentinelDB is built around an event-driven, asynchronous processing model using 
 ```
 POST /trigger
       ↓
-API inserts run + outbox jobs atomically (same transaction)
+API inserts run + outboxes jobs atomically (same transaction)
       ↓
 Worker pool consumes jobs via SELECT FOR UPDATE SKIP LOCKED
       ↓
@@ -88,32 +92,32 @@ sentineldb/
 
 ## Database Schema
 
-| Table | Description |
-|---|---|
-| `assets` | Digital assets registered for monitoring (IPs, domains, emails) |
-| `runs` | Execution history — each trigger creates one run |
-| `outbox` | Job queue — one job per asset per source within a run |
-| `findings` | Actionable results — only what changed or is newly detected |
-| `asset_snapshots` | Raw API responses per scan — used for change detection |
+| Table             | Description                                                     |
+| ----------------- | --------------------------------------------------------------- |
+| `assets`          | Digital assets registered for monitoring (IPs, domains, emails) |
+| `runs`            | Execution history — each trigger creates one run                |
+| `outboxes`        | Job queue — one job per asset per source within a run           |
+| `findings`        | Actionable results — only what changed or is newly detected     |
+| `asset_snapshots` | Raw API responses per scan — used for change detection          |
 
 ## API Routes
 
-| Method | Route | Description |
-|---|---|---|
-| POST | /api/v1/assets | Register a new asset |
-| GET | /api/v1/assets | List all assets |
-| GET | /api/v1/assets/:id | Get asset details |
-| PUT | /api/v1/assets/:id | Update asset (label, active) |
-| DELETE | /api/v1/assets/:id | Soft-delete asset |
-| POST | /api/v1/trigger | Start a full scan of all active assets |
-| POST | /api/v1/trigger/:id | Start a scan for a specific asset |
-| GET | /api/v1/runs | Execution history |
-| GET | /api/v1/runs/:id | Run details |
-| GET | /api/v1/runs/:id/jobs | Job-level progress within a run |
-| GET | /api/v1/findings | All open findings |
-| GET | /api/v1/findings/:id | Finding details |
-| PATCH | /api/v1/findings/:id/resolve | Mark finding as resolved |
-| GET | /api/v1/metrics | Prometheus metrics endpoint |
+| Method | Route                        | Description                            |
+| ------ | ---------------------------- | -------------------------------------- |
+| POST   | /api/v1/assets               | Register a new asset                   |
+| GET    | /api/v1/assets               | List all assets                        |
+| GET    | /api/v1/assets/:id           | Get asset details                      |
+| PUT    | /api/v1/assets/:id           | Update asset (label, active)           |
+| DELETE | /api/v1/assets/:id           | Soft-delete asset                      |
+| POST   | /api/v1/trigger              | Start a full scan of all active assets |
+| POST   | /api/v1/trigger/:id          | Start a scan for a specific asset      |
+| GET    | /api/v1/runs                 | Execution history                      |
+| GET    | /api/v1/runs/:id             | Run details                            |
+| GET    | /api/v1/runs/:id/jobs        | Job-level progress within a run        |
+| GET    | /api/v1/findings             | All open findings                      |
+| GET    | /api/v1/findings/:id         | Finding details                        |
+| PATCH  | /api/v1/findings/:id/resolve | Mark finding as resolved               |
+| GET    | /api/v1/metrics              | Prometheus metrics endpoint            |
 
 ## Getting Started
 
@@ -137,15 +141,15 @@ go run cmd/worker/main.go
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `SERVER_PORT` | API server port (e.g. 8080) |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET_KEY` | Secret key for API authentication |
-| `SHODAN_API_KEY` | Shodan API key |
-| `HIBP_API_KEY` | HaveIBeenPwned API key |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token |
-| `TELEGRAM_CHAT_ID` | Telegram chat ID for notifications |
+| Variable             | Description                        |
+| -------------------- | ---------------------------------- |
+| `SERVER_PORT`        | API server port (e.g. 8080)        |
+| `DATABASE_URL`       | PostgreSQL connection string       |
+| `JWT_SECRET_KEY`     | Secret key for API authentication  |
+| `SHODAN_API_KEY`     | Shodan API key                     |
+| `HIBP_API_KEY`       | HaveIBeenPwned API key             |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token                 |
+| `TELEGRAM_CHAT_ID`   | Telegram chat ID for notifications |
 
 ## Learning Goals
 

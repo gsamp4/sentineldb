@@ -14,7 +14,8 @@ func Dequeue(ctx context.Context, db *gorm.DB, log *logger.Logger) (*models.Outb
 
 	err := db.WithContext(ctx).
 		Raw(`
-			SELECT * FROM outbox
+			SELECT id, run_id, asset_id, job_type, status, attempts, max_attempts, scheduled_at, updated_at, finished_at
+			FROM outboxes
 			WHERE status = 'pending'
 			AND scheduled_at <= NOW()
 			ORDER BY scheduled_at ASC
@@ -23,7 +24,7 @@ func Dequeue(ctx context.Context, db *gorm.DB, log *logger.Logger) (*models.Outb
 		`).Scan(&job).Error
 
 		if err != nil {
-			log.Error("Error fetching job from outbox: ", err)
+			log.Error("Error fetching job from outboxes: ", err)
 			return nil, err
 		}
 
