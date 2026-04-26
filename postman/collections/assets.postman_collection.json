@@ -1,0 +1,96 @@
+{
+  "info": {
+    "_postman_id": "7c6ea4b1-53de-4d9e-8ca0-0f7e3f7f8a01",
+    "name": "SentinelDB Assets",
+    "description": "Requests para o recurso assets da API SentinelDB.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "assetId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Asset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"domain\",\n  \"value\": \"example.com\",\n  \"label\": \"Main domain\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/assets",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "assets"]
+        },
+        "description": "Cria um asset do tipo ip, domain ou email."
+      }
+    },
+    {
+      "name": "List Assets",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/assets",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "assets"]
+        }
+      }
+    },
+    {
+      "name": "Get Asset By ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "assets", "{{assetId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Asset",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"Critical domain\",\n  \"active\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "assets", "{{assetId}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Asset",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "assets", "{{assetId}}"]
+        }
+      }
+    }
+  ]
+}

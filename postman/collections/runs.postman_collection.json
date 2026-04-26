@@ -1,0 +1,64 @@
+{
+  "info": {
+    "_postman_id": "2135cc95-1dfd-44c6-bef5-59b0ce7376cc",
+    "name": "SentinelDB Runs",
+    "description": "Requests para consultar runs e jobs da API SentinelDB.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "runId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAA"
+    }
+  ],
+  "item": [
+    {
+      "name": "List Runs",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/runs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "runs"]
+        }
+      }
+    },
+    {
+      "name": "Get Run By ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/runs/{{runId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "runs", "{{runId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Run Jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"{{runId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/runs/{{runId}}/jobs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "runs", "{{runId}}", "jobs"]
+        },
+        "description": "A rota contem o ID no path, mas o handler atual tambem faz bind do body JSON."
+      }
+    }
+  ]
+}

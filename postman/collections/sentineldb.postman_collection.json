@@ -1,0 +1,241 @@
+{
+  "info": {
+    "_postman_id": "55c86f5f-933e-4c87-a381-6d7d80d0c7a2",
+    "name": "SentinelDB API",
+    "description": "Collection consolidada da API SentinelDB baseada nas rotas registradas em internal/job/routes/routes.go.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "assetId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    },
+    {
+      "key": "runId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAA"
+    },
+    {
+      "key": "findingId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAB"
+    }
+  ],
+  "item": [
+    {
+      "name": "Assets",
+      "item": [
+        {
+          "name": "Create Asset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"domain\",\n  \"value\": \"example.com\",\n  \"label\": \"Main domain\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assets"]
+            }
+          }
+        },
+        {
+          "name": "List Assets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assets"]
+            }
+          }
+        },
+        {
+          "name": "Get Asset By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assets", "{{assetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Asset",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Critical domain\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assets", "{{assetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Asset",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assets/{{assetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assets", "{{assetId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Runs",
+      "item": [
+        {
+          "name": "List Runs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/runs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "runs"]
+            }
+          }
+        },
+        {
+          "name": "Get Run By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/runs/{{runId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "runs", "{{runId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Run Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{runId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/runs/{{runId}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "runs", "{{runId}}", "jobs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Triggers",
+      "item": [
+        {
+          "name": "Trigger All Active Assets",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/trigger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "trigger"]
+            }
+          }
+        },
+        {
+          "name": "Get Trigger By ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{runId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/trigger/{{runId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "trigger", "{{runId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Findings",
+      "item": [
+        {
+          "name": "List Findings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/findings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "findings"]
+            }
+          }
+        },
+        {
+          "name": "Get Finding By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/findings/{{findingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "findings", "{{findingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Resolve Finding",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{findingId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/findings/{{findingId}}/resolve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "findings", "{{findingId}}", "resolve"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

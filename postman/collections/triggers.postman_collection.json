@@ -1,0 +1,53 @@
+{
+  "info": {
+    "_postman_id": "f0e58c9b-0ed7-4c20-8f08-2462f6e6b03e",
+    "name": "SentinelDB Triggers",
+    "description": "Requests para disparar scans e consultar triggers da API SentinelDB.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "runId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAA"
+    }
+  ],
+  "item": [
+    {
+      "name": "Trigger All Active Assets",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/trigger",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "trigger"]
+        }
+      }
+    },
+    {
+      "name": "Get Trigger By ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"{{runId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/trigger/{{runId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "trigger", "{{runId}}"]
+        },
+        "description": "A rota usa :id no path, mas o handler atual le o ID a partir do body JSON."
+      }
+    }
+  ]
+}

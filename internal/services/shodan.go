@@ -10,25 +10,26 @@ import (
 	"os"
 	"sentineldb/internal/job/models"
 	"sentineldb/pkg/logger"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
 type ShodanResponse struct {
-	Matches []struct {
-		IP        string `json:"ip_str"`
-		Port      int    `json:"port"`
-		Org       string `json:"org"`
-		Hostnames []string `json:"hostnames"`
-	} `json:"matches"`
+    Matches []struct {
+        IP        string   `json:"ip_str"`
+        Port      int      `json:"port"`
+        Org       string   `json:"org"`
+        Hostnames []string `json:"hostnames"`
+    } `json:"matches"`
 }
 
 func ProcessShodan(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.Outbox) error {
     var asset models.Asset
     db.First(&asset, "id = ?", job.AssetID)
 
-    result, err := CallShodan(asset.Value)
+    result, err := CallShodan(ctx, asset.Value)
     if err != nil {
         return err
     }
@@ -115,7 +116,7 @@ func diffSnapshots(previousData json.RawMessage, current ShodanResponse, assetID
     return findings
 }
 
-func CallShodan(assetValue string) (ShodanResponse, error) {
+func CallShodan(ctx context.Context, assetValue string) (ShodanResponse, error) {
     apiKey := os.Getenv("SHODAN_API_KEY")
     if apiKey == "" {
         return ShodanResponse{}, fmt.Errorf("SHODAN_API_KEY environment variable is not set")
@@ -128,7 +129,13 @@ func CallShodan(assetValue string) (ShodanResponse, error) {
     params.Add("key", apiKey)
     params.Add("query", query)
 
-    resp, err := http.Get(endpoint + "?" + params.Encode())
+    req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+params.Encode(), nil)
+    if err != nil {
+        return ShodanResponse{}, fmt.Errorf("failed to create request: %w", err)
+    }
+
+    client := &http.Client{Timeout: 15 * time.Second}
+    resp, err := client.Do(req)
     if err != nil {
         return ShodanResponse{}, fmt.Errorf("HTTP request failed: %w", err)
     }

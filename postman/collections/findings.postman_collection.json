@@ -1,0 +1,64 @@
+{
+  "info": {
+    "_postman_id": "18dd1eef-3e13-4f14-a1f8-e25efad0dbe4",
+    "name": "SentinelDB Findings",
+    "description": "Requests para consultar e atualizar findings da API SentinelDB.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "findingId",
+      "value": "01ARZ3NDEKTSV4RRFFQ69G5FAB"
+    }
+  ],
+  "item": [
+    {
+      "name": "List Findings",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/findings",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "findings"]
+        }
+      }
+    },
+    {
+      "name": "Get Finding By ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/findings/{{findingId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "findings", "{{findingId}}"]
+        }
+      }
+    },
+    {
+      "name": "Resolve Finding",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"{{findingId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/findings/{{findingId}}/resolve",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "findings", "{{findingId}}", "resolve"]
+        },
+        "description": "A rota contem o ID no path, mas o handler atual tambem faz bind do body JSON."
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.O
     var err error
 
     switch job.JobType {
-    case "scan_shodan":
+    case "shodan_scan":
         err = services.ProcessShodan(ctx, db, log, job)
     // case "scan_hibp":
     //     err = processHIBP(ctx, db, log, job)
@@ -27,7 +27,23 @@ func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.O
     }
 
     if err != nil {
-       //handleFailure(db, job, err)
+        nextAttempts := job.Attempts + 1
+        updates := map[string]interface{}{
+            "attempts":   nextAttempts,
+            "updated_at": time.Now(),
+        }
+
+        if nextAttempts >= job.MaxAttempts {
+            updates["status"] = "failed"
+            updates["finished_at"] = time.Now()
+            log.Error("job failed permanently: ", err)
+        } else {
+            updates["status"] = "pending"
+            updates["scheduled_at"] = time.Now().Add(30 * time.Second)
+            log.Error("job failed, rescheduling: ", err)
+        }
+
+        db.Model(job).Updates(updates)
         return
     }
 
