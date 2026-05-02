@@ -21,7 +21,13 @@ func NewRunHandler(repo domain.RunRepositoryInterface, log *logger.Logger) *RunH
 }
 
 func (h *RunHandler) GetRuns(c echo.Context) error {
-	return nil
+	runs, err := h.Repo.ListRuns()
+	if err != nil {
+		h.Logger.Error("Failed to list runs", err)
+		return c.JSON(500, map[string]string{"message": "failed to list runs"})
+	}
+
+	return c.JSON(200, runs)
 }
 
 func (h *RunHandler) GetRunByID(c echo.Context) error {
@@ -29,18 +35,15 @@ func (h *RunHandler) GetRunByID(c echo.Context) error {
 	if param == "" {
 		return c.JSON(400, map[string]string{"message": "id parameter is required"})
 	}
-	return nil
-}
 
-func (h *RunHandler) GetRunJobs(c echo.Context) error {
-	var req RunRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(400, map[string]string{"message": "invalid request body"})
-	}
-
-	jobs, err := h.Repo.GetRunJobs(req.ID)
+	run, err := h.Repo.GetRunByID(param)
 	if err != nil {
-		return c.JSON(404, map[string]string{"message": "run jobs not found"})
+		h.Logger.Error("Failed to get run by id", err)
+		return c.JSON(500, map[string]string{"message": "failed to get run"})
 	}
-	return c.JSON(200, jobs)
+	if run == nil {
+		return c.JSON(404, map[string]string{"message": "run not found"})
+	}
+
+	return c.JSON(200, run)
 }

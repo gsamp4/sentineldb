@@ -10,7 +10,6 @@ import (
 type RunRepositoryInterface interface {
 	GetRunByID(id string) (*models.Run, error)
 	ListRuns() ([]models.Run, error)
-	GetRunJobs(id string) ([]models.Outbox, error)
 }
 
 type RunRepository struct {
@@ -37,13 +36,4 @@ func (r RunRepository) ListRuns() ([]models.Run, error) {
 		return nil, err
 	}
 	return runs, nil
-}
-
-func (r RunRepository) GetRunJobs(id string) ([]models.Outbox, error) {
-	var jobs []models.Outbox
-	r.Logger.Info("[RUNS] - Fetching jobs for run with ID: %s", id)
-	if err := r.DB.Where("run_id = ?", id).Find(&jobs).Error; err != nil {
-		return nil, err
-	}
-	return jobs, nil
 }
