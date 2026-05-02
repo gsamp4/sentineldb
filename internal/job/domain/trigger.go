@@ -40,8 +40,12 @@ func (r TriggerRepository) RunTrigger() bool {
             return err  // rollback
         }
 
-        // cria um job em outboxes para cada asset
+        // cria um job em outboxes apenas para assets suportados pelo scan atual
         for _, asset := range assets {
+            if asset.Type != "ip" {
+                continue
+            }
+
             job := models.Outbox{
                 ID:          ulid.Make().String(),
                 RunID:       run.ID,

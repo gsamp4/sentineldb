@@ -12,17 +12,16 @@ import (
 )
 
 func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.Outbox) {
+    jobLog := log.With(fmt.Sprintf("[job_id=%s job_type=%s asset_id=%s]", job.ID, job.JobType, job.AssetID))
     var err error
+
+    jobLog.Info("starting job processing")
 
     switch job.JobType {
     case "shodan_scan":
-        err = services.ProcessShodan(ctx, db, log, job)
-    // case "scan_hibp":
-    //     err = processHIBP(ctx, db, log, job)
-    // case "correlate":
-    //     err = processCorrelate(ctx, db, log, job)
+        err = services.ProcessInternetDB(ctx, db, jobLog, job)
     default:
-        log.Error("unknown job type: ", job.JobType)
+        jobLog.Error("unknown job type", job.JobType)
         err = fmt.Errorf("unknown job type: %s", job.JobType)
     }
 
@@ -36,19 +35,26 @@ func Process(ctx context.Context, db *gorm.DB, log *logger.Logger, job *models.O
         if nextAttempts >= job.MaxAttempts {
             updates["status"] = "failed"
             updates["finished_at"] = time.Now()
-            log.Error("job failed permanently: ", err)
+            jobLog.Error("job failed permanently", err)
         } else {
             updates["status"] = "pending"
             updates["scheduled_at"] = time.Now().Add(30 * time.Second)
-            log.Error("job failed, rescheduling: ", err)
+            jobLog.Warn("job failed, rescheduling", err)
         }
 
-        db.Model(job).Updates(updates)
+        if updateErr := db.Model(job).Updates(updates).Error; updateErr != nil {
+            jobLog.Error("failed to update job status after processing error", updateErr)
+        }
         return
     }
 
-    db.Model(job).Updates(map[string]interface{}{
+    if updateErr := db.Model(job).Updates(map[string]interface{}{
         "status":      "completed",
         "finished_at": time.Now(),
-    })
+    }).Error; updateErr != nil {
+        jobLog.Error("failed to mark job as completed", updateErr)
+        return
+    }
+
+    jobLog.Info("job completed")
 }

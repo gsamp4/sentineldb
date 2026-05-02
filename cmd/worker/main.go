@@ -16,9 +16,7 @@ import (
 )
 
 type Config struct {
-	ServerPort   string
-	DatabaseURL  string
-	JwtSecretKey string
+    DatabaseURL string
 }
 
 var log *logger.Logger
@@ -28,19 +26,11 @@ func loadConfig() (Config, error) {
     godotenv.Load()
 
     cfg := Config{
-        ServerPort:   os.Getenv("SERVER_PORT"),
-        DatabaseURL:  os.Getenv("DATABASE_URL"),
-        JwtSecretKey: os.Getenv("JWT_SECRET_KEY"),
+        DatabaseURL: os.Getenv("DATABASE_URL"),
     }
 
-    if cfg.ServerPort == "" {
-        return Config{}, fmt.Errorf("SERVER_PORT not set")
-    }
     if cfg.DatabaseURL == "" {
         return Config{}, fmt.Errorf("DATABASE_URL not set")
-    }
-    if cfg.JwtSecretKey == "" {
-        return Config{}, fmt.Errorf("JWT_SECRET_KEY not set")
     }
 
     return cfg, nil
