@@ -1,0 +1,59 @@
+package worker
+
+import (
+	"context"
+	"sentineldb/internal/job/models"
+	"sentineldb/internal/services"
+	"sentineldb/pkg/logger"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+
+func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger.Logger) {
+	log.Info("Processing job with ID: %s", job.ID)
+	updates := make(map[string]interface{})
+
+	var err error
+	switch job.JobType {
+		case "internetdb_scan":
+			var result *services.InternetDBResponse
+			service := services.NewInternetDBService("", nil)
+			result, err = service.LookupByIP(ctx, job.Asset.Value)
+
+			if err == nil {
+		        err = processInternetDB(ctx, db, log, job, result)
+		    }
+
+		default:
+			err = fmt.Errorf("job type not implemented: %s", job.JobType)
+	}
+
+	if err != nil {
+		updates = validateFailAttempts(job, updates)
+	} else {
+		updates["status"] = "completed"
+		updates["finished_at"] = time.Now()
+	}
+
+	if err := db.Model(&job).Updates(updates).Error; err != nil {
+		log.Errorf("error updating job %s: %v", job.ID, err)
+		return
+	}
+}
+
+func validateFailAttempts(job models.Outbox, updates map[string]interface{}) map[string]interface{} {
+	nextAttempt := job.Attempts + 1
+
+	if nextAttempt >= job.MaxAttempts {
+		updates["status"] = "failed"
+		updates["attempts"] = nextAttempt
+		updates["finished_at"] = time.Now()
+	} else {
+		updates["status"] = "pending"
+		updates["attempts"] = nextAttempt
+		updates["scheduled_at"] = time.Now().Add(time.Duration(30 * nextAttempt) * time.Second)
+	}
+	return updates
+}
