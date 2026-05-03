@@ -51,7 +51,7 @@ func (h *TriggerHandler) handleTriggerError(c echo.Context, err error) error {
 	case errors.Is(err, domain.ErrTriggerUnsupportedAsset):
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "asset type is not supported for trigger yet"})
 	default:
-		h.Logger.Error("Failed to trigger run", err)
+		h.Logger.Errorf("Failed to trigger run: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "failed to create trigger run"})
 	}
 }

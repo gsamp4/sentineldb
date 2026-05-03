@@ -8,12 +8,12 @@ import (
 )
 
 type RunRequest struct {
-	ID        string `json:"id"`
+	ID string `json:"id"`
 }
 
 type RunHandler struct {
 	Repo   domain.RunRepositoryInterface
-    Logger *logger.Logger
+	Logger *logger.Logger
 }
 
 func NewRunHandler(repo domain.RunRepositoryInterface, log *logger.Logger) *RunHandler {
@@ -23,7 +23,7 @@ func NewRunHandler(repo domain.RunRepositoryInterface, log *logger.Logger) *RunH
 func (h *RunHandler) GetRuns(c echo.Context) error {
 	runs, err := h.Repo.ListRuns()
 	if err != nil {
-		h.Logger.Error("Failed to list runs", err)
+		h.Logger.Errorf("Failed to list runs: %v", err)
 		return c.JSON(500, map[string]string{"message": "failed to list runs"})
 	}
 
@@ -38,7 +38,7 @@ func (h *RunHandler) GetRunByID(c echo.Context) error {
 
 	run, err := h.Repo.GetRunByID(param)
 	if err != nil {
-		h.Logger.Error("Failed to get run by id", err)
+		h.Logger.Errorf("Failed to get run by id: %v", err)
 		return c.JSON(500, map[string]string{"message": "failed to get run"})
 	}
 	if run == nil {

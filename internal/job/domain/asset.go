@@ -15,25 +15,30 @@ import (
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
 type AssetRepositoryInterface interface {
-    RegisterAsset(asset *models.Asset) error
-    ListAssets() ([]models.Asset, error)
-    GetAssetByID(id string) (*models.Asset, error)
-    UpdateAsset(id string, label *string, active *bool) error
-    SoftDeleteAsset(id string) error
+	RegisterAsset(asset *models.Asset) error
+	ListAssets() ([]models.Asset, error)
+	GetAssetByID(id string) (*models.Asset, error)
+	UpdateAsset(id string, label *string, active *bool) error
+	SoftDeleteAsset(id string) error
 }
 
-
 type AssetRepository struct {
-	DB *gorm.DB
+	DB     *gorm.DB
 	Logger *logger.Logger
 }
 
 func (a AssetRepository) RegisterAsset(asset *models.Asset) error {
-    fmt.Println("DB is nil:", a.DB == nil)
-    asset.ID = ulid.Make().String()
-    err := a.DB.Create(asset).Error
-    fmt.Println("REGISTER ERROR:", err)  // log aqui
-    return err
+	if a.Logger != nil {
+		a.Logger.Debugf("registering asset db_nil=%t", a.DB == nil)
+	}
+
+	asset.ID = ulid.Make().String()
+	err := a.DB.Create(asset).Error
+	if err != nil && a.Logger != nil {
+		a.Logger.Errorf("failed to register asset: %v", err)
+	}
+
+	return err
 }
 
 func (a AssetRepository) ListAssets() ([]models.Asset, error) {
@@ -107,9 +112,9 @@ func ValidateAsset(assetType string, value string) error {
 			return fmt.Errorf("invalid domain name: %s", value)
 		}
 	}
-	return  nil
+	return nil
 }
 
 func isValidEmail(email string) bool {
-    return emailRegex.MatchString(email)
+	return emailRegex.MatchString(email)
 }

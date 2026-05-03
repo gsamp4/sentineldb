@@ -13,13 +13,13 @@ type RunRepositoryInterface interface {
 }
 
 type RunRepository struct {
-	DB *gorm.DB
+	DB     *gorm.DB
 	Logger *logger.Logger
 }
 
 func (r RunRepository) GetRunByID(id string) (*models.Run, error) {
 	var run models.Run
-	r.Logger.Info("[RUNS] - Fetching run with ID: %s", id)
+	r.Logger.Infof("[RUNS] - Fetching run with ID: %s", id)
 	if err := r.DB.First(&run, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

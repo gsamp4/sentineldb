@@ -28,30 +28,30 @@ var log *logger.Logger
 
 func loadConfig() (Config, error) {
 	// Load environment variables
-    godotenv.Load()
+	godotenv.Load()
 
-    cfg := Config{
-        ServerPort:   os.Getenv("SERVER_PORT"),
-        DatabaseURL:  os.Getenv("DATABASE_URL"),
-        JwtSecretKey: os.Getenv("JWT_SECRET_KEY"),
-    }
+	cfg := Config{
+		ServerPort:   os.Getenv("SERVER_PORT"),
+		DatabaseURL:  os.Getenv("DATABASE_URL"),
+		JwtSecretKey: os.Getenv("JWT_SECRET_KEY"),
+	}
 
-    if cfg.ServerPort == "" {
-        return Config{}, fmt.Errorf("SERVER_PORT not set")
-    }
-    if cfg.DatabaseURL == "" {
-        return Config{}, fmt.Errorf("DATABASE_URL not set")
-    }
-    if cfg.JwtSecretKey == "" {
-        return Config{}, fmt.Errorf("JWT_SECRET_KEY not set")
-    }
+	if cfg.ServerPort == "" {
+		return Config{}, fmt.Errorf("SERVER_PORT not set")
+	}
+	if cfg.DatabaseURL == "" {
+		return Config{}, fmt.Errorf("DATABASE_URL not set")
+	}
+	if cfg.JwtSecretKey == "" {
+		return Config{}, fmt.Errorf("JWT_SECRET_KEY not set")
+	}
 
-    return cfg, nil
+	return cfg, nil
 }
 
 func startServer(cfg Config, e *echo.Echo) {
 	// Initialize routes, handlers, and other server setup here
-	log.Info("Server starting on port " + cfg.ServerPort)
+	log.Infof("Server starting on port %s", cfg.ServerPort)
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
 		Handler:      e,
@@ -61,7 +61,7 @@ func startServer(cfg Config, e *echo.Echo) {
 	}
 
 	if err := e.StartServer(srv); err != nil && err != http.ErrServerClosed {
-		log.Fatal("Server error: ", err)
+		log.Fatalf("Server error: %v", err)
 		e.StdLogger.Panicln("Server error: ", err)
 	}
 }
@@ -75,12 +75,12 @@ func main() {
 
 	cfg, err := loadConfig()
 	if err != nil {
-		log.Fatal("config error: ", err)
+		log.Fatalf("config error: %v", err)
 	}
 
 	db, err := storage.NewConnection(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("database error: ", err)
+		log.Fatalf("database error: %v", err)
 	}
 
 	e := middlewares.ApplySecurityMiddlewares(echo.New())
@@ -98,7 +98,7 @@ func main() {
 	defer cancel()
 
 	if err := e.Shutdown(ctx); err != nil {
-		log.Fatal("Server shutdown error: ", err)
+		log.Fatalf("Server shutdown error: %v", err)
 	}
 	log.Info("Server stopped")
 }

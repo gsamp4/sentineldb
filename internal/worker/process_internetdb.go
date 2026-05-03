@@ -24,7 +24,7 @@ func processInternetDB(
 
 	jsonData, err := json.Marshal(result)
 	if err != nil {
-		log.Error("Error serializing InternetDBResponse", "error", err)
+		log.Errorf("Error serializing InternetDBResponse: %v", err)
 		return fmt.Errorf("error serializing InternetDBResponse: %v", err)
 	}
 
@@ -39,7 +39,7 @@ func processInternetDB(
 
 	tx := db.WithContext(ctx).Create(&assetSnapshot)
 	if tx.Error != nil {
-		log.Error("Error saving AssetSnapshot", "error", tx.Error)
+		log.Errorf("Error saving AssetSnapshot: %v", tx.Error)
 		return fmt.Errorf("error saving snapshot: %v", tx.Error)
 	}
 
@@ -50,45 +50,45 @@ func processInternetDB(
 
 	var previousSnapshot *models.AssetSnapshot
 	queryResult := db.Raw("SELECT * FROM asset_snapshots WHERE asset_id = ? AND source = ? ORDER BY snapshot_at DESC LIMIT 1 OFFSET 1",
-    job.AssetID, "shodan_internetdb").Scan(&previousSnapshot)
+		job.AssetID, "shodan_internetdb").Scan(&previousSnapshot)
 
 	if queryResult.Error != nil {
-		log.Error("error getting previous snapshot", "error", queryResult.Error)
+		log.Errorf("error getting previous snapshot: %v", queryResult.Error)
 		return fmt.Errorf("error getting previous snapshot: %v", err)
 	}
 
-	if queryResult .RowsAffected == 0 {
-		log.Info("snapshot first id=%s asset=%s", job.ID, job.AssetID)
+	if queryResult.RowsAffected == 0 {
+		log.Infof("snapshot first id=%s asset=%s", job.ID, job.AssetID)
 		return nil
 	}
 
 	newFindings, err := compareSnapshotDiff(previousSnapshot, &assetSnapshot)
 	if err != nil {
-		log.Error("error comparing snapshots", "error", err)
+		log.Errorf("error comparing snapshots: %v", err)
 		return fmt.Errorf("error getting previous snapshot")
 	}
 
 	if len(newFindings) > 0 {
 		tx = db.WithContext(ctx).Create(&newFindings)
 		if tx.Error != nil {
-			log.Error("Error saving NEW AssetSnapshot", "error", tx.Error)
+			log.Errorf("Error saving NEW AssetSnapshot: %v", tx.Error)
 			return fmt.Errorf("error saving NEW snapshot: %v", tx.Error)
 		}
 
-		log.Info("findings ok id=%s count=%d", job.ID, len(newFindings))
+		log.Infof("findings ok id=%s count=%d", job.ID, len(newFindings))
 
 		telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 		telegramChatID := os.Getenv("TELEGRAM_CHAT_ID")
 
 		for _, finding := range newFindings {
 			if err := services.Notify(log, telegramToken, telegramChatID, finding); err != nil {
-				log.Error("telegram notification failed", "finding_id", finding.ID, "error", err)
+				log.Errorf("telegram notification failed finding_id=%s err=%v", finding.ID, err)
 			}
 		}
 	}
 
 	if len(newFindings) == 0 {
-		log.Info("findings none id=%s", job.ID)
+		log.Infof("findings none id=%s", job.ID)
 	}
 
 	return nil

@@ -22,13 +22,13 @@ func Notify(log *logger.Logger, token, chatID string, finding models.Finding) er
 
 	if strings.TrimSpace(token) == "" {
 		err := fmt.Errorf("telegram token is required")
-		log.Error("telegram notify aborted", "reason", "missing token", "finding_id", finding.ID)
+		log.Errorf("telegram notify aborted reason=%s finding_id=%s", "missing token", finding.ID)
 		return err
 	}
 
 	if strings.TrimSpace(chatID) == "" {
 		err := fmt.Errorf("telegram chat_id is required")
-		log.Error("telegram notify aborted", "reason", "missing chat_id", "finding_id", finding.ID)
+		log.Errorf("telegram notify aborted reason=%s finding_id=%s", "missing chat_id", finding.ID)
 		return err
 	}
 
@@ -41,7 +41,7 @@ func Notify(log *logger.Logger, token, chatID string, finding models.Finding) er
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		log.Error("telegram notify payload serialization failed", "finding_id", finding.ID, "error", err)
+		log.Errorf("telegram notify payload serialization failed finding_id=%s err=%v", finding.ID, err)
 		return err
 	}
 
@@ -49,23 +49,23 @@ func Notify(log *logger.Logger, token, chatID string, finding models.Finding) er
 
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Error("telegram notify request failed", "finding_id", finding.ID, "error", err, "elapsed", time.Since(startedAt).String())
+		log.Errorf("telegram notify request failed finding_id=%s err=%v elapsed=%s", finding.ID, err, time.Since(startedAt))
 		return err
 	}
 	defer resp.Body.Close()
 
 	responseBody, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		log.Error("telegram notify response read failed", "finding_id", finding.ID, "status", resp.StatusCode, "error", readErr)
+		log.Errorf("telegram notify response read failed finding_id=%s status=%d err=%v", finding.ID, resp.StatusCode, readErr)
 		return readErr
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Error("telegram notify rejected", "finding_id", finding.ID, "status", resp.StatusCode, "response", string(responseBody), "elapsed", time.Since(startedAt).String())
+		log.Errorf("telegram notify rejected finding_id=%s status=%d response=%s elapsed=%s", finding.ID, resp.StatusCode, string(responseBody), time.Since(startedAt))
 		return fmt.Errorf("erro na API: status %d: %s", resp.StatusCode, string(responseBody))
 	}
 
-	log.Info("telegram ok finding=%s chat=%s", finding.ID, maskTelegramTarget(chatID))
+	log.Infof("telegram ok finding=%s chat=%s", finding.ID, maskTelegramTarget(chatID))
 
 	return nil
 }

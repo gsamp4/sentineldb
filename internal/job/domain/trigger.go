@@ -115,7 +115,7 @@ func (r TriggerRepository) createRunWithJobs(assets []models.Asset) (*TriggerRes
 		return nil, err
 	}
 
-	r.Logger.Info("[TRIGGER] - created run %s with %d jobs", runID, len(jobs))
+	r.Logger.Infof("[TRIGGER] - created run %s with %d jobs", runID, len(jobs))
 
 	return &TriggerResult{
 		RunID:    runID,

@@ -14,7 +14,7 @@ type FindingRepositoryInterface interface {
 }
 
 type FindingRepository struct {
-	DB *gorm.DB
+	DB     *gorm.DB
 	Logger *logger.Logger
 }
 
@@ -29,7 +29,7 @@ func (f FindingRepository) ListFindings() ([]models.Finding, error) {
 
 func (f FindingRepository) GetFindingByID(id string) (*models.Finding, error) {
 	var finding models.Finding
-	f.Logger.Info("[FINDINGS] Fetching finding with ID: %s", id)
+	f.Logger.Infof("[FINDINGS] Fetching finding with ID: %s", id)
 	if err := f.DB.First(&finding, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

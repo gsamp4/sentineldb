@@ -39,7 +39,7 @@ func Dequeue(ctx context.Context, db *gorm.DB, log *logger.Logger) (*models.Outb
 	})
 
 	if err != nil {
-		log.Error("Error dequeuing job: %v", err)
+		log.Errorf("Error dequeuing job: %v", err)
 		return nil, err
 	}
 
