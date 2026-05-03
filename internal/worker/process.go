@@ -11,6 +11,17 @@ import (
 	"gorm.io/gorm"
 )
 
+var internetDBLookup = services.CallInternetDB
+
+func SetInternetDBLookupForTests(fn func(context.Context, string) (*services.InternetDBResponse, error)) func() {
+	previous := internetDBLookup
+	internetDBLookup = fn
+
+	return func() {
+		internetDBLookup = previous
+	}
+}
+
 func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger.Logger) {
 	log.Infof("job start id=%s type=%s try=%d", job.ID, job.JobType, job.Attempts+1)
 	updates := make(map[string]interface{})
@@ -19,8 +30,7 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 	switch job.JobType {
 	case "internetdb_scan":
 		var result *services.InternetDBResponse
-		service := services.NewInternetDBService("", nil)
-		result, err = service.LookupByIP(ctx, job.Asset.Value)
+		result, err = internetDBLookup(ctx, job.Asset.Value)
 		if err == nil {
 			log.Infof("internetdb ok id=%s asset=%s", job.ID, job.AssetID)
 		}
@@ -47,26 +57,26 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 		return
 	}
 
-	var count int64 // pointer when using count in gorm
-	countResult := db.Raw(`
-		SELECT COUNT(*) FROM outbox WHERE status NOT IN (?) AND run_id = ?
-	`, []string{"completed", "failed"}, job.RunID).Scan(&count)
+	var count int64
+	countResult := db.Model(&models.Outbox{}).
+		Where("run_id = ? AND status NOT IN ?", job.RunID, []string{"completed", "failed"}).
+		Count(&count)
 
 	if countResult.Error != nil {
-		log.Errorf("error selecting runs id=%s err=%v", job.ID, countResult.Error)
+		log.Errorf("error selecting run jobs id=%s err=%v", job.ID, countResult.Error)
 		return
 	}
 
 	if count == 0 {
-		queryResult := db.Exec(`
-			UPDATE runs
-			SET status = 'completed',
-			finished_at = NOW()
-			WHERE id = ?
-		`, job.RunID)
+		queryResult := db.Model(&models.Run{}).
+			Where("id = ?", job.RunID).
+			Updates(map[string]interface{}{
+				"status":      "completed",
+				"finished_at": time.Now(),
+			})
 
 		if queryResult.Error != nil {
-			log.Errorf("error updating runs id=%s err=%v", job.ID, queryResult.Error)
+			log.Errorf("error updating run id=%s err=%v", job.ID, queryResult.Error)
 			return
 		}
 		log.Infof("run completed run_id=%s", job.RunID)
@@ -75,7 +85,7 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 
 func validateFailedJobAttempts(
 	job models.Outbox,
-	jobUpdates map[string]interface{}
+	jobUpdates map[string]interface{},
 ) map[string]interface{} {
 	nextAttempt := job.Attempts + 1
 
