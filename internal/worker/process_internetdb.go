@@ -12,7 +12,7 @@ func processInternetDB(
 	job models.Outbox,
 	result *InternetDBResponse
 ) error {
-	
+
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		log.Error("Error serializing InternetDBResponse", "error", err)
@@ -40,10 +40,10 @@ func processInternetDB(
 	}
 
 	var previousSnapshot *models.AssetSnapshot
-	queryResult , err := db.Raw("SELECT * FROM asset_snapshots WHERE asset_id = ? AND source = ? ORDER BY snapshot_at DESC LIMIT 1 OFFSET 1",
+	queryResult := db.Raw("SELECT * FROM asset_snapshots WHERE asset_id = ? AND source = ? ORDER BY snapshot_at DESC LIMIT 1 OFFSET 1",
     job.AssetID, "shodan_internetdb").Scan(&previousSnapshot)
 
-	if err != nil {
+	if queryResult.Error {
 		log.Errorf("No snapshot has been created: %v", err)
 		return fmt.Errorf("error getting previous snapshot: %v", err)
 	}
@@ -59,10 +59,12 @@ func processInternetDB(
 		return fmt.Errorf("error getting previous snapshot")
 	}
 
-	tx := db.WithContext(ctx).Create(&newFindings)
-	if tx.Error != nil {
-		log.Errorf("Error saving NEW AssetSnapshot", "error", tx.Error)
-		return fmt.Errorf("error saving NEW snapshot: %v", tx.Error)
+	if len(newFindings) > 0 {
+		tx = db.WithContext(ctx).Create(&newFindings)
+		if tx.Error != nil {
+			log.Errorf("Error saving NEW AssetSnapshot", "error", tx.Error)
+			return fmt.Errorf("error saving NEW snapshot: %v", tx.Error)
+		}
 	}
 
 	return nil
@@ -105,8 +107,8 @@ func compareSnapshotDiff(previous *models.AssetSnapshot, current *models.AssetSn
 
 	newFindings := models.Finding{
 		ID:         uuid.NewString(),
-		AssetID:    uuid.NewString(),
-		RunID:      uuid.NewString(),
+		AssetID:    current.AssetID,
+		RunID:      current.RunID,
 		Source:     "shodan_internetdb",
 		Data:       json.RawMessage(diffs),
 		SnapshotAt: time.Now(),
