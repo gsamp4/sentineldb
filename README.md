@@ -1,179 +1,188 @@
 # SentinelDB
 
-A personal OSINT and cybersecurity monitoring system built with Go, designed to continuously watch digital assets and alert when exposures or anomalies are detected.
+SentinelDB is a self-hosted monitoring service for internet-facing assets. It exposes an HTTP API to register assets and trigger scans, and processes those scans asynchronously through a PostgreSQL-backed transactional outbox.
 
-## Motivation
+## Current Features
 
-Security monitoring tools are either too expensive, too complex to self-host, or built for enterprise teams. SentinelDB is a lightweight, self-hosted alternative for developers and security-conscious individuals who want visibility over their own digital footprint — without paying for Shodan Monitor, SecurityTrails, or similar SaaS products.
-
-## What It Does
-
-SentinelDB monitors digital assets (IPs, domains, and emails) across multiple threat intelligence sources and sends alerts when something changes or a new exposure is found.
-
-**Shodan integration**
-
-- Detects open ports and exposed services
-- Identifies software versions with known CVEs
-- Tracks SSL certificate expiration
-- Alerts when new ports open or services change since the last scan
-
-**HaveIBeenPwned integration**
-
-- Monitors emails and domains against known data breaches
-- Alerts when a new breach is detected containing monitored assets
-
-**Cross-source correlation**
-
-- Combines findings from multiple sources within the same run
-- Elevates severity when an asset is exposed on multiple fronts simultaneously (e.g., open database port + email found in breach)
-
-**Telegram notifications**
-
-- Real-time alerts with severity classification (critical, high, medium, low)
-- Daily digest summarizing all active findings
-- Notifications when findings are resolved
+- Asset CRUD for `ip`, `domain`, and `email`
+- Manual trigger of scans for all active assets or a single asset
+- Asynchronous worker that consumes jobs with `SELECT FOR UPDATE SKIP LOCKED`
+- InternetDB integration for IP-based lookups
+- Snapshot persistence and diff-based finding creation
+- Telegram notification delivery for newly detected findings
+- Run tracking with automatic completion when all jobs finish
+- Retry with incremental backoff for failed jobs
+- Graceful shutdown for both API and worker processes
 
 ## Architecture
 
-SentinelDB is built around an event-driven, asynchronous processing model using PostgreSQL as the job queue — implementing the Transactional Outbox Pattern to guarantee consistency between run creation and job execution.
+SentinelDB uses PostgreSQL as both the primary datastore and the job queue.
 
+```text
+POST /api/v1/trigger
+      |
+      v
+API creates a run + outbox jobs in the same DB transaction
+      |
+      v
+Worker dequeues pending jobs with SKIP LOCKED
+      |
+      v
+InternetDB lookup runs for supported assets
+      |
+      v
+Snapshot is stored and compared with the previous snapshot
+      |
+      v
+New findings are persisted and optionally sent to Telegram
 ```
-POST /trigger
-      ↓
-API inserts run + outboxes jobs atomically (same transaction)
-      ↓
-Worker pool consumes jobs via SELECT FOR UPDATE SKIP LOCKED
-      ↓
-Each job calls its source (Shodan or HIBP)
-      ↓
-Results are compared against previous snapshots
-      ↓
-New findings are persisted and notifications sent via Telegram
-```
 
-**Key architectural decisions**
+### Key Decisions
 
-- PostgreSQL as job queue instead of an external broker (RabbitMQ, Pub/Sub) — eliminates infrastructure dependency and guarantees transactional consistency between run creation and job scheduling
-- SELECT FOR UPDATE SKIP LOCKED — enables concurrent workers to dequeue jobs without conflicts or duplicate processing
-- Snapshot-based change detection — each scan result is stored and compared against the previous one, so alerts are only triggered when something actually changes
-- Job chaining — correlation jobs are scheduled after scan jobs complete, enabling multi-source analysis within a single run
-- Graceful shutdown — in-flight jobs complete before the process exits
+- **Transactional outbox:** run creation and job enqueueing are atomic
+- **PostgreSQL queue:** no external broker is required
+- **`SKIP LOCKED`:** concurrent workers do not process the same job twice
+- **Snapshot diffing:** findings are created only when data changes
+- **Retry/backoff:** failed jobs return to `pending` with a future `scheduled_at`
 
-## Tech Stack
+## Implemented API
 
-- **Language:** Go
-- **Web Framework:** Echo
-- **Database:** PostgreSQL with GORM
-- **Job Queue:** PostgreSQL (Transactional Outbox Pattern)
-- **Observability:** Prometheus + Grafana + OpenTelemetry
-- **Notifications:** Telegram Bot API
-- **External APIs:** Shodan, HaveIBeenPwned
-- **Infrastructure:** Docker, Docker Compose
+| Method | Route | Description |
+| --- | --- | --- |
+| POST | `/api/v1/assets` | Create an asset |
+| GET | `/api/v1/assets` | List assets |
+| GET | `/api/v1/assets/:id` | Get one asset |
+| PUT | `/api/v1/assets/:id` | Update label/active |
+| DELETE | `/api/v1/assets/:id` | Soft-delete an asset |
+| POST | `/api/v1/trigger` | Trigger jobs for all active supported assets |
+| POST | `/api/v1/trigger/:id` | Trigger jobs for one supported asset |
+| GET | `/api/v1/runs` | List runs |
+| GET | `/api/v1/runs/:id` | Get one run |
+| GET | `/api/v1/findings` | List findings |
+| GET | `/api/v1/findings/:id` | Get one finding |
+| PATCH | `/api/v1/findings/:id/resolve` | Mark a finding as closed |
+
+## Data Model
+
+| Table | Purpose |
+| --- | --- |
+| `assets` | Registered assets to monitor |
+| `runs` | Scan execution records |
+| `outboxes` | Pending/processing/completed jobs |
+| `asset_snapshots` | Raw InternetDB snapshots |
+| `findings` | Changes detected between snapshots |
 
 ## Project Structure
 
-```
+```text
 sentineldb/
 ├── cmd/
-│   ├── api/              # API entrypoint
-│   └── worker/           # Worker entrypoint
+│   ├── api/                 # HTTP API entrypoint
+│   └── worker/              # Background worker entrypoint
 ├── internal/
-│   └── job/
-│       ├── domain/       # Business logic, validation, repository interfaces
-│       ├── handlers/     # HTTP handlers and DTOs
-│       ├── models/       # GORM models
-│       └── routes/       # Route registration
+│   ├── job/
+│   │   ├── domain/          # Repositories and business rules
+│   │   ├── handlers/        # Echo handlers
+│   │   ├── models/          # GORM models
+│   │   └── routes/          # Route wiring
+│   ├── services/            # InternetDB and Telegram integrations
+│   ├── storage/             # PostgreSQL connection setup
+│   └── worker/              # Dequeue and job processing logic
 ├── pkg/
-│   ├── logger/           # Structured logger
-│   └── retry/            # Exponential backoff and circuit breaker
-├── docker-compose.yml
+│   └── logger/              # Application logger
+├── tests/
+│   └── integration/         # PostgreSQL-backed integration tests
+├── instructions/            # Project requirements and implementation notes
+├── Makefile
 └── README.md
 ```
 
-## Database Schema
+## Running Locally
 
-| Table             | Description                                                     |
-| ----------------- | --------------------------------------------------------------- |
-| `assets`          | Digital assets registered for monitoring (IPs, domains, emails) |
-| `runs`            | Execution history — each trigger creates one run                |
-| `outboxes`        | Job queue — one job per asset per source within a run           |
-| `findings`        | Actionable results — only what changed or is newly detected     |
-| `asset_snapshots` | Raw API responses per scan — used for change detection          |
+### Requirements
 
-## API Routes
+- Go 1.24+
+- PostgreSQL
 
-| Method | Route                        | Description                            |
-| ------ | ---------------------------- | -------------------------------------- |
-| POST   | /api/v1/assets               | Register a new asset                   |
-| GET    | /api/v1/assets               | List all assets                        |
-| GET    | /api/v1/assets/:id           | Get asset details                      |
-| PUT    | /api/v1/assets/:id           | Update asset (label, active)           |
-| DELETE | /api/v1/assets/:id           | Soft-delete asset                      |
-| POST   | /api/v1/trigger              | Start a full scan of all active assets |
-| POST   | /api/v1/trigger/:id          | Start a scan for a specific asset      |
-| GET    | /api/v1/runs                 | Execution history                      |
-| GET    | /api/v1/runs/:id             | Run details                            |
-| GET    | /api/v1/runs/:id/jobs        | Job-level progress within a run        |
-| GET    | /api/v1/findings             | All open findings                      |
-| GET    | /api/v1/findings/:id         | Finding details                        |
-| PATCH  | /api/v1/findings/:id/resolve | Mark finding as resolved               |
-| GET    | /api/v1/metrics              | Prometheus metrics endpoint            |
+### Environment
 
-## Getting Started
+Create a `.env` file in the repository root or export the variables in your shell.
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `SERVER_PORT` | API only | Port used by `cmd/api` |
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `DB_SCHEMA` | no | Optional PostgreSQL schema via `search_path` |
+| `JWT_SECRET_KEY` | API only | API startup requirement |
+| `TELEGRAM_BOT_TOKEN` | no | Enables Telegram delivery |
+| `TELEGRAM_CHAT_ID` | no | Enables Telegram delivery |
+| `INTEGRATION_TEST` | no | Set to `1` to run integration tests |
+
+### Start the API
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/sentineldb
-cd sentineldb
-
-# Copy environment variables
-cp .env.example .env
-
-# Start dependencies
-docker-compose up -d
-
-# Run the API
 go run cmd/api/main.go
+```
 
-# Run the worker (separate terminal)
+### Start the Worker
+
+```bash
 go run cmd/worker/main.go
 ```
 
-## Environment Variables
+## Testing
 
-| Variable             | Description                                         |
-| -------------------- | --------------------------------------------------- |
-| `SERVER_PORT`        | API server port (e.g. 8080)                         |
-| `DATABASE_URL`       | PostgreSQL connection string                        |
-| `DB_SCHEMA`          | Optional PostgreSQL schema applied as `search_path` |
-| `JWT_SECRET_KEY`     | Secret key for API authentication                   |
-| `SHODAN_API_KEY`     | Shodan API key                                      |
-| `HIBP_API_KEY`       | HaveIBeenPwned API key                              |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token                                  |
-| `TELEGRAM_CHAT_ID`   | Telegram chat ID for notifications                  |
+### Unit Tests
 
-## Learning Goals
+```bash
+go test ./...
+```
 
-This project is being built as a deliberate practice exercise targeting senior backend engineering skills:
+### Integration Tests
 
-- Concurrency and parallelism in Go — worker pool with goroutines, channels, context cancellation
-- Transactional Outbox Pattern — guaranteed consistency between API and async processing
-- Database internals — SELECT FOR UPDATE SKIP LOCKED, partial indexes, JSONB queries
-- Observability — Prometheus metrics, OpenTelemetry distributed tracing, structured logging
-- Testing — unit tests with interface-based mocking, integration tests with testcontainers
-- Resilience patterns — exponential backoff with jitter, circuit breaker per external source
-- Graceful shutdown — in-flight job completion on SIGTERM
+Integration tests use a real PostgreSQL instance and only run when `INTEGRATION_TEST=1`.
 
-## Roadmap
+```bash
+INTEGRATION_TEST=1 go test ./tests/integration/...
+```
 
-- [ ] Asset CRUD
-- [ ] Shodan integration
+### Makefile Helpers
+
+```bash
+make test
+make test-verbose
+make test-race
+make test-cover
+make test-integration
+```
+
+## Test Coverage Areas
+
+The repository currently includes:
+
+- Handler-level unit tests with mocked repositories
+- Service and storage tests
+- Integration tests for:
+  - transactional outbox atomicity
+  - concurrent dequeue with `SKIP LOCKED`
+  - full job lifecycle completion
+  - retry and backoff behavior
+
+## Current Scope vs Roadmap
+
+### Implemented
+
+- [x] Asset CRUD
+- [x] Worker processing with transactional outbox
+- [x] InternetDB-based snapshot ingestion
+- [x] Findings generation from snapshot diffs
+- [x] Telegram notification integration
+- [x] Unit and integration test suites
+
+### Planned / Not Yet Implemented
+
 - [ ] HaveIBeenPwned integration
-- [ ] Worker pool with outbox pattern
-- [ ] Snapshot-based change detection
-- [ ] Findings and severity classification
-- [ ] Telegram notifications
 - [ ] Cross-source correlation
-- [ ] Prometheus metrics
+- [ ] Metrics endpoint
 - [ ] OpenTelemetry tracing
 - [ ] Grafana dashboard
