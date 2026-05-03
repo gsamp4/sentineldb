@@ -35,7 +35,7 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 
 	if err != nil {
 		log.Warnf("job fail id=%s err=%v", job.ID, err)
-		updates = validateFailAttempts(job, updates)
+		updates = validateFailedJobAttempts(job, updates)
 	} else {
 		updates["status"] = "completed"
 		updates["finished_at"] = time.Now()
@@ -46,19 +46,47 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 		log.Errorf("error updating job id=%s err=%v", job.ID, err)
 		return
 	}
+
+	var count int64 // pointer when using count in gorm
+	countResult := db.Raw(`
+		SELECT COUNT(*) FROM outbox WHERE status NOT IN (?) AND run_id = ?
+	`, []string{"completed", "failed"}, job.RunID).Scan(&count)
+
+	if countResult.Error != nil {
+		log.Errorf("error selecting runs id=%s err=%v", job.ID, countResult.Error)
+		return
+	}
+
+	if count == 0 {
+		queryResult := db.Exec(`
+			UPDATE runs
+			SET status = 'completed',
+			finished_at = NOW()
+			WHERE id = ?
+		`, job.RunID)
+
+		if queryResult.Error != nil {
+			log.Errorf("error updating runs id=%s err=%v", job.ID, queryResult.Error)
+			return
+		}
+		log.Infof("run completed run_id=%s", job.RunID)
+	}
 }
 
-func validateFailAttempts(job models.Outbox, updates map[string]interface{}) map[string]interface{} {
+func validateFailedJobAttempts(
+	job models.Outbox,
+	jobUpdates map[string]interface{}
+) map[string]interface{} {
 	nextAttempt := job.Attempts + 1
 
 	if nextAttempt >= job.MaxAttempts {
-		updates["status"] = "failed"
-		updates["attempts"] = nextAttempt
-		updates["finished_at"] = time.Now()
+		jobUpdates["status"] = "failed"
+		jobUpdates["finished_at"] = time.Now()
+		jobUpdates["attempts"] = nextAttempt
 	} else {
-		updates["status"] = "pending"
-		updates["attempts"] = nextAttempt
-		updates["scheduled_at"] = time.Now().Add(time.Duration(30*nextAttempt) * time.Second)
+		jobUpdates["status"] = "pending"
+		jobUpdates["attempts"] = nextAttempt
+		jobUpdates["scheduled_at"] = time.Now().Add(time.Duration(30*nextAttempt) * time.Second)
 	}
-	return updates
+	return jobUpdates
 }
