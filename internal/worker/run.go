@@ -37,7 +37,7 @@ func (w *NewWorkerType) Run(ctx context.Context,) {
 				}
 				if job != nil {
 					w.Log.Info("Processing job ID: %s, Type: %s", job.ID, job.JobType)
-					ProcessJob(ctx, job, w.DB, w.Log)
+					ProcessJob(ctx, *job, w.DB, w.Log)
 				}
 		}
 	}

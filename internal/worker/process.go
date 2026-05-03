@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"sentineldb/internal/job/models"
 	"sentineldb/internal/services"
 	"sentineldb/pkg/logger"
@@ -38,7 +39,7 @@ func ProcessJob(ctx context.Context, job models.Outbox, db *gorm.DB, log *logger
 	}
 
 	if err := db.Model(&job).Updates(updates).Error; err != nil {
-		log.Errorf("error updating job %s: %v", job.ID, err)
+		log.Error("error updating job", "job_id", job.ID, "error", err)
 		return
 	}
 }
