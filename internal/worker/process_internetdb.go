@@ -58,7 +58,7 @@ func processInternetDB(
 	}
 
 	if queryResult .RowsAffected == 0 {
-		log.Error("No previous snapshot found.")
+		log.Info("snapshot first id=%s asset=%s", job.ID, job.AssetID)
 		return nil
 	}
 
@@ -75,6 +75,8 @@ func processInternetDB(
 			return fmt.Errorf("error saving NEW snapshot: %v", tx.Error)
 		}
 
+		log.Info("findings ok id=%s count=%d", job.ID, len(newFindings))
+
 		telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 		telegramChatID := os.Getenv("TELEGRAM_CHAT_ID")
 
@@ -83,6 +85,10 @@ func processInternetDB(
 				log.Error("telegram notification failed", "finding_id", finding.ID, "error", err)
 			}
 		}
+	}
+
+	if len(newFindings) == 0 {
+		log.Info("findings none id=%s", job.ID)
 	}
 
 	return nil

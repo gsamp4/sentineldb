@@ -11,8 +11,9 @@ Variaveis usadas nas collections:
 
 Observacoes sobre a implementacao atual da API:
 
-- `POST /api/v1/trigger/:id` tambem tenta ler o `id` no body JSON.
 - `GET /api/v1/runs/:id/jobs` tambem tenta ler o `id` no body JSON.
 - `PATCH /api/v1/findings/:id/resolve` tambem tenta ler o `id` no body JSON.
 
-Por isso, as requests dessas collections enviam o parametro no path e no body para maximizar compatibilidade com o codigo atual.
+Por isso, as requests de `runs/:id/jobs` e `findings/:id/resolve` enviam o parametro no path e no body para maximizar compatibilidade com o codigo atual.
+
+No caso de `POST /api/v1/trigger/:id`, o `:id` correto e um `assetId`, porque o `runId` so existe depois que o trigger e aceito.

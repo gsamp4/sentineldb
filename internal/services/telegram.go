@@ -19,9 +19,6 @@ type telegramMessagePayload struct {
 
 func Notify(log *logger.Logger, token, chatID string, finding models.Finding) error {
 	startedAt := time.Now()
-	maskedChatID := maskTelegramTarget(chatID)
-
-	log.Info("telegram notify started", "finding_id", finding.ID, "asset_id", finding.AssetID, "severity", finding.Severity, "chat_id", maskedChatID)
 
 	if strings.TrimSpace(token) == "" {
 		err := fmt.Errorf("telegram token is required")
@@ -48,10 +45,7 @@ func Notify(log *logger.Logger, token, chatID string, finding models.Finding) er
 		return err
 	}
 
-	log.Debug("telegram notify payload ready", "finding_id", finding.ID, "message_length", len(messageText), "payload_bytes", len(body))
-
 	client := &http.Client{Timeout: 10 * time.Second}
-	log.Debug("telegram notify request dispatch", "finding_id", finding.ID, "timeout", client.Timeout.String())
 
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
@@ -71,7 +65,7 @@ func Notify(log *logger.Logger, token, chatID string, finding models.Finding) er
 		return fmt.Errorf("erro na API: status %d: %s", resp.StatusCode, string(responseBody))
 	}
 
-	log.Info("telegram notify completed", "finding_id", finding.ID, "status", resp.StatusCode, "elapsed", time.Since(startedAt).String())
+	log.Info("telegram ok finding=%s chat=%s", finding.ID, maskTelegramTarget(chatID))
 
 	return nil
 }

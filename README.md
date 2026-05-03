@@ -141,15 +141,16 @@ go run cmd/worker/main.go
 
 ## Environment Variables
 
-| Variable             | Description                        |
-| -------------------- | ---------------------------------- |
-| `SERVER_PORT`        | API server port (e.g. 8080)        |
-| `DATABASE_URL`       | PostgreSQL connection string       |
-| `JWT_SECRET_KEY`     | Secret key for API authentication  |
-| `SHODAN_API_KEY`     | Shodan API key                     |
-| `HIBP_API_KEY`       | HaveIBeenPwned API key             |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token                 |
-| `TELEGRAM_CHAT_ID`   | Telegram chat ID for notifications |
+| Variable             | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| `SERVER_PORT`        | API server port (e.g. 8080)                         |
+| `DATABASE_URL`       | PostgreSQL connection string                        |
+| `DB_SCHEMA`          | Optional PostgreSQL schema applied as `search_path` |
+| `JWT_SECRET_KEY`     | Secret key for API authentication                   |
+| `SHODAN_API_KEY`     | Shodan API key                                      |
+| `HIBP_API_KEY`       | HaveIBeenPwned API key                              |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token                                  |
+| `TELEGRAM_CHAT_ID`   | Telegram chat ID for notifications                  |
 
 ## Learning Goals
 

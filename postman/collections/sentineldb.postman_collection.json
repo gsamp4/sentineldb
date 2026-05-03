@@ -45,7 +45,8 @@
               "raw": "{{baseUrl}}/api/v1/assets",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "assets"]
-            }
+            },
+            "description": "Cria um asset do tipo ip, domain ou email."
           }
         },
         {
@@ -167,24 +168,15 @@
           }
         },
         {
-          "name": "Get Trigger By ID",
+          "name": "Trigger Specific Asset",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"id\": \"{{runId}}\"\n}"
-            },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/trigger/{{runId}}",
+              "raw": "{{baseUrl}}/api/v1/trigger/{{assetId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "trigger", "{{runId}}"]
-            }
+              "path": ["api", "v1", "trigger", "{{assetId}}"]
+            },
+            "description": "Dispara um scan para um asset especifico ja cadastrado. O parametro :id deve ser um assetId."
           }
         }
       ]

@@ -3,7 +3,9 @@ package storage
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -19,6 +21,11 @@ const (
 )
 
 func NewConnection(databaseURL string) (*gorm.DB, error) {
+	configuredDatabaseURL, err := applySchemaToDatabaseURL(databaseURL, os.Getenv("DB_SCHEMA"))
+	if err != nil {
+		return nil, err
+	}
+
 	gormLogger := logger.New(
 		log.New(os.Stdout, "", log.LstdFlags),
 		logger.Config{
@@ -29,7 +36,7 @@ func NewConnection(databaseURL string) (*gorm.DB, error) {
 		},
 	)
 
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(configuredDatabaseURL), &gorm.Config{
 		Logger: gormLogger,
 	})
 	if err != nil {
@@ -52,4 +59,25 @@ func NewConnection(databaseURL string) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func applySchemaToDatabaseURL(databaseURL string, schema string) (string, error) {
+	if schema == "" || strings.Contains(strings.ToLower(databaseURL), "search_path=") {
+		return databaseURL, nil
+	}
+
+	if strings.HasPrefix(databaseURL, "postgres://") || strings.HasPrefix(databaseURL, "postgresql://") {
+		parsedURL, err := url.Parse(databaseURL)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse database url: %w", err)
+		}
+
+		query := parsedURL.Query()
+		query.Set("search_path", schema)
+		parsedURL.RawQuery = query.Encode()
+
+		return parsedURL.String(), nil
+	}
+
+	return fmt.Sprintf("%s search_path=%s", databaseURL, schema), nil
 }

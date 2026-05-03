@@ -6,32 +6,33 @@ import (
 	"sentineldb/pkg/logger"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func Dequeue(ctx context.Context, db *gorm.DB, log *logger.Logger) (*models.Outbox, error) {
 	// Asynchronous job processing loop that listens for shutdown signals via the context
 
-	var job *models.Outbox
+	job := &models.Outbox{}
 
-	err := db.Transaction(func(tx *gorm.DB) error {
-		result := tx.Raw(`
-            SELECT * FROM public.outbox
-            WHERE status = 'pending'
-            FOR UPDATE SKIP LOCKED
-            LIMIT 1
-        `).Scan(job)
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+			Preload("Asset").
+			Where("status = ? AND scheduled_at <= NOW()", "pending").
+			Order("scheduled_at ASC").
+			First(job).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				job = nil
+				return nil
+			}
 
-		if result.Error != nil {
-			return result.Error
+			return err
 		}
 
-		if result.RowsAffected == 0 {
-			return nil
-		}
-
-		result = tx.Model(&models.Outbox{}).Where("id = ?", job.ID).Update("status", "processing")
-		if result.Error != nil {
-			return result.Error
+		if err := tx.Model(&models.Outbox{}).
+			Where("id = ?", job.ID).
+			Updates(map[string]interface{}{"status": "processing", "updated_at": gorm.Expr("NOW()")}).Error; err != nil {
+			return err
 		}
 
 		return nil

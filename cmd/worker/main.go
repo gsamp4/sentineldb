@@ -12,6 +12,7 @@ import (
 	"sentineldb/internal/storage"
 	"sentineldb/internal/worker"
 	applogger "sentineldb/pkg/logger"
+	"github.com/joho/godotenv"
 
 	"gorm.io/gorm"
 )
@@ -23,6 +24,7 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	// Initialize database connection
+	godotenv.Load()
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL environment variable is required")
